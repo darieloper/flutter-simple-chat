@@ -56,11 +56,14 @@ class DataToSend {
 
 class _MyHomePageState extends State<MyHomePage> {
   String uuid;
+  String status = 'En línea';
   List<MessageData> messages = new List();
   TextEditingController _controller = TextEditingController();
   ScrollController _scrollController = ScrollController();
   GlobalKey listviewKey = new GlobalKey();
+  bool isConnected = false;
   bool isInEdges = true;
+  bool isGoinToBottom = false;
 
   @override
   void initState() {
@@ -70,9 +73,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     _scrollController.addListener(() {
-      print(_scrollController.position.pixels);
-      print(_scrollController.position.maxScrollExtent);
-      print('------------------');
       setState(() {
         isInEdges = (_scrollController.position.pixels ==
                 _scrollController.position.maxScrollExtent) ||
@@ -90,18 +90,27 @@ class _MyHomePageState extends State<MyHomePage> {
       case 'identifier':
         this.setState(() {
           uuid = decoded['data'].toString();
+          isConnected = true;
         });
         print('connected ' + uuid);
         break;
 
       case 'message':
         this.setState(() {
+          isGoinToBottom = isInEdges;
           messages.add(MessageData(
               data: decoded['data'],
               me: decoded['uuid'] == uuid,
               arrived: DateTime.now()));
           print(messages.last);
         });
+
+        Future.delayed(Duration(milliseconds: 500))
+            .then((value) => this.setState(() {
+                  isGoinToBottom = false;
+                  print(isGoinToBottom);
+                }));
+
         SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
           if (!isInEdges) {
             return;
@@ -120,8 +129,24 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
-      ),
+          title: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.title),
+          Visibility(
+            child: Padding(
+              padding: EdgeInsets.only(top: 5),
+              child: Text(
+                status,
+                style: TextStyle(fontSize: 14),
+              ),
+            ),
+            visible: isConnected,
+          )
+        ],
+      )),
       body: Container(
           decoration: BoxDecoration(
               image: DecorationImage(
@@ -153,7 +178,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                       bottom: 0,
                                       right: 0,
                                       child: AnimatedOpacity(
-                                          opacity: !isInEdges ? 1 : 0,
+                                          opacity: !isInEdges && !isGoinToBottom
+                                              ? 1
+                                              : 0,
                                           curve: Curves.easeIn,
                                           duration: Duration(microseconds: 300),
                                           child: MaterialButton(
