@@ -59,12 +59,27 @@ class _MyHomePageState extends State<MyHomePage> {
   List<MessageData> messages = new List();
   TextEditingController _controller = TextEditingController();
   ScrollController _scrollController = ScrollController();
+  GlobalKey listviewKey = new GlobalKey();
+  bool isInEdges = true;
 
   @override
   void initState() {
     super.initState();
     widget.channel.stream.listen((message) {
       reactToMessage(message);
+    });
+
+    _scrollController.addListener(() {
+      print(_scrollController.position.pixels);
+      print(_scrollController.position.maxScrollExtent);
+      print('------------------');
+      setState(() {
+        isInEdges = (_scrollController.position.pixels ==
+                _scrollController.position.maxScrollExtent) ||
+            (_scrollController.position.pixels < 1 &&
+                _scrollController.position.pixels <
+                    _scrollController.position.maxScrollExtent);
+      });
     });
   }
 
@@ -88,6 +103,10 @@ class _MyHomePageState extends State<MyHomePage> {
           print(messages.last);
         });
         SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
+          if (!isInEdges) {
+            return;
+          }
+
           _scrollController.animateTo(
               _scrollController.position.maxScrollExtent,
               duration: Duration(milliseconds: 300),
@@ -100,74 +119,103 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-        ),
-        body: Container(
-            decoration: BoxDecoration(
-                image: DecorationImage(
-                    image: AssetImage('images/wallpaper2.jpg'),
-                    fit: BoxFit.cover)),
-            child: Scaffold(
-                backgroundColor: Colors.transparent,
-                body: Padding(
-                    padding: const EdgeInsets.all(0),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(
-                              child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 10),
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              itemCount: messages.length,
-                              itemBuilder: (context, index) {
-                                var msg = messages[index];
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Container(
+          decoration: BoxDecoration(
+              image: DecorationImage(
+                  image: AssetImage('images/wallpaper2.jpg'),
+                  fit: BoxFit.cover)),
+          child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: Padding(
+                  padding: const EdgeInsets.all(0),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                            child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 10),
+                                child: Stack(
+                                  children: [
+                                    ListView.builder(
+                                      key: listviewKey,
+                                      controller: _scrollController,
+                                      itemCount: messages.length,
+                                      itemBuilder: (context, index) {
+                                        var msg = messages[index];
 
-                                return MessageBubble(msg: msg);
-                              },
-                            ),
-                          )),
-                          Container(
-                            height: 60,
-                            padding: EdgeInsets.all(10),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                    child: Container(
-                                  padding: EdgeInsets.only(
-                                      top: 0, bottom: 5, left: 10, right: 10),
-                                  margin: EdgeInsets.only(right: 5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _controller,
-                                    maxLines: 1,
-                                    decoration: InputDecoration(
-                                        contentPadding: EdgeInsets.only(
-                                            top: 10, bottom: 10),
-                                        border: InputBorder.none,
-                                        hintText: 'Type your message'),
-                                  ),
-                                )),
-                                Container(
-                                  padding: EdgeInsets.zero,
-                                  width: 32,
-                                  child: IconButton(
-                                      padding: EdgeInsets.zero,
-                                      icon: Icon(
-                                        Icons.send,
-                                        color: Colors.deepOrange,
-                                        size: 32,
-                                      ),
-                                      onPressed: () => _sendMessage()),
+                                        return MessageBubble(msg: msg);
+                                      },
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: AnimatedOpacity(
+                                          opacity: !isInEdges ? 1 : 0,
+                                          curve: Curves.easeIn,
+                                          duration: Duration(microseconds: 300),
+                                          child: MaterialButton(
+                                              color: Colors.deepOrange,
+                                              onPressed: () =>
+                                                  _scrollController.animateTo(
+                                                      _scrollController.position
+                                                          .maxScrollExtent,
+                                                      duration: Duration(
+                                                          milliseconds: 300),
+                                                      curve: Curves.easeInOut),
+                                              shape: CircleBorder(
+                                                  side: BorderSide(
+                                                      color:
+                                                          Colors.deepOrange)),
+                                              child: Icon(
+                                                Icons.arrow_downward_sharp,
+                                              ))),
+                                    )
+                                  ],
+                                ))),
+                        Container(
+                          height: 60,
+                          padding: EdgeInsets.all(10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  child: Container(
+                                padding: EdgeInsets.only(
+                                    top: 0, bottom: 5, left: 10, right: 10),
+                                margin: EdgeInsets.only(right: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(15),
                                 ),
-                              ],
-                            ),
+                                child: TextFormField(
+                                  controller: _controller,
+                                  maxLines: 1,
+                                  decoration: InputDecoration(
+                                      contentPadding:
+                                          EdgeInsets.only(top: 10, bottom: 10),
+                                      border: InputBorder.none,
+                                      hintText: 'Type your message'),
+                                ),
+                              )),
+                              Container(
+                                padding: EdgeInsets.zero,
+                                width: 32,
+                                child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    icon: Icon(
+                                      Icons.send,
+                                      color: Colors.deepOrange,
+                                      size: 32,
+                                    ),
+                                    onPressed: () => _sendMessage()),
+                              ),
+                            ],
                           ),
-                        ])))));
+                        ),
+                      ])))),
+    );
   }
 
   void _sendMessage() {
