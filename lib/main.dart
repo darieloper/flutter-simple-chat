@@ -57,13 +57,14 @@ class DataToSend {
 class _MyHomePageState extends State<MyHomePage> {
   String uuid;
   String status = 'En línea';
+  String oldValue = '';
   List<MessageData> messages = new List();
   TextEditingController _controller = TextEditingController();
   ScrollController _scrollController = ScrollController();
   GlobalKey listviewKey = new GlobalKey();
   bool isConnected = false;
   bool isInEdges = true;
-  bool isGoinToBottom = false;
+  bool isGoingToBottom = false;
 
   @override
   void initState() {
@@ -97,7 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       case 'message':
         this.setState(() {
-          isGoinToBottom = isInEdges;
+          isGoingToBottom = isInEdges;
           messages.add(MessageData(
               data: decoded['data'],
               me: decoded['uuid'] == uuid,
@@ -107,8 +108,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
         Future.delayed(Duration(milliseconds: 500))
             .then((value) => this.setState(() {
-                  isGoinToBottom = false;
-                  print(isGoinToBottom);
+                  isGoingToBottom = false;
+                  print(isGoingToBottom);
                 }));
 
         SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
@@ -178,9 +179,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                       bottom: 0,
                                       right: 0,
                                       child: AnimatedOpacity(
-                                          opacity: !isInEdges && !isGoinToBottom
-                                              ? 1
-                                              : 0,
+                                          opacity:
+                                              (!isInEdges && !isGoingToBottom)
+                                                  ? 1
+                                                  : 0,
                                           curve: Curves.easeIn,
                                           duration: Duration(microseconds: 300),
                                           child: MaterialButton(
