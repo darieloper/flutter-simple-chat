@@ -1,6 +1,6 @@
 # flutter_chat_application
 
-A new Flutter project.
+Simple Chat Application using websockets
 
 ## Getting Started
 
